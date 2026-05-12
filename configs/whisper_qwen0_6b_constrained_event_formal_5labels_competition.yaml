@@ -1,0 +1,83 @@
+seed: 42
+chunk_ms: 80
+context_chunks: 375
+target_chunks: 25
+stride: 5
+sample_rate: 16000
+max_train_samples: null
+max_valid_samples: null
+num_workers: 4
+
+paths:
+  project_root: /path/to/finvcup_11th_baseline
+  train_audio_dir: /path/to/finvcup_11th_baseline/train/audio
+  train_text_dir: /path/to/finvcup_11th_baseline/train/text
+  train_labels_dir: /path/to/finvcup_11th_baseline/train/labels
+
+  output_root: /path/to/finvcup_11th_baseline/outputs
+  checkpoints_dir: /path/to/finvcup_11th_baseline/outputs/checkpoints
+  logs_dir: /path/to/finvcup_11th_baseline/outputs/logs
+
+  cache_root: /path/to/.cache
+
+labels:
+  C: 0
+  T: 1
+  BC: 2
+  I: 3
+  NA: 4
+  positive_ids: [1, 2, 3]
+  multi_targets: [C, NA, I, BC, T]
+
+split:
+  valid_ratio: 0.1
+  by_conversation: true
+
+audio_encoder:
+  type: whisper
+  model_name: openai/whisper-large-v3
+  proj_dim: 512
+  freeze: true
+
+text_encoder:
+  model_name: Qwen/Qwen3-0.6B
+  max_length: 256
+  freeze_backbone: true
+
+context_encoder:
+  vocab_size: 5
+  embed_dim: 16
+  channels: [32, 64]
+
+fusion_head:
+  hidden_dims: [512, 128]
+  dropout: 0.3
+
+train:
+  multi_label: true
+  pos_weight_mode: per_label
+
+  epochs: 40
+  max_steps_per_epoch: 5000
+  eval_valid_max_batches: 400
+
+  batch_size: 2
+  eval_batch_size: 4
+  log_every_steps: 20
+
+  learning_rate: 8.0e-5
+  warmup_ratio: 0.01
+  ema_decay: 0.98
+  weight_decay: 0.01
+  grad_clip_norm: 1.0
+  use_amp: true
+  gradient_accumulation_steps: 4
+  save_metric: roc_auc
+  early_stop_patience: 8
+
+env:
+  HF_HOME: /path/to/.cache/huggingface
+  TRANSFORMERS_CACHE: /path/to/.cache/huggingface
+  TORCH_HOME: /path/to/.cache/torch
+  HF_ENDPOINT: https://hf-mirror.com
+
