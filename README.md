@@ -120,7 +120,7 @@ bash scripts/run_train.sh configs/whisper_qwen0_6b_constrained_event_formal_5lab
 bash scripts/run_infer.sh /path/to/best.pt /path/to/pred_test1.csv /path/to/test configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml
 ```
 
-`pred_test1.csv` 列：`segment_id` + `labels.multi_targets`（小写）对应的 0/1 预测列。
+`pred_test1.csv` 列：`segment_id` + `labels.multi_targets`（小写）对应的 0/1 预测列。格式参考repo中 pred_test1.csv即可
 
 /path/to/best.pt指训练好的模型checkpoint，/path/to/pred_test1.csv指测试集结果输出路径，/path/to/test指测试集数据路径
 
@@ -149,4 +149,5 @@ src/
   utils.py        # 指标、配置、分布式工具
 train/            # 训练数据（需自行下载解压）
 test/       # 测试数据（需自行下载解压）
+pred_test1.csv     # 参考提交结果格式
 ```
