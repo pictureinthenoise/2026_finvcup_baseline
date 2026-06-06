@@ -9,14 +9,14 @@ max_valid_samples: null
 num_workers: 4
 
 paths:
-  project_root: /kaggle/working/finvcup_11th_baseline
+  project_root: /kaggle/working/2026_finvcup_baseline
   train_audio_dir: /kaggle/input/datasets/pictureinthenoise/finvolution-2026-teach-voice-ai-when-to-speak/train/audio
   train_text_dir: /kaggle/input/datasets/pictureinthenoise/finvolution-2026-teach-voice-ai-when-to-speak/train/text
   train_labels_dir: /kaggle/input/datasets/pictureinthenoise/finvolution-2026-teach-voice-ai-when-to-speak/train/labels
   
-  output_root:  /kaggle/working/finvcup_11th_baseline/outputs
-  checkpoints_dir: /kaggle/working/finvcup_11th_baseline/outputs/checkpoints
-  logs_dir: /kaggle/working/finvcup_11th_baseline/outputs/logs
+  output_root:  /kaggle/working/2026_finvcup_baseline/outputs
+  checkpoints_dir: /kaggle/working/2026_finvcup_baseline/outputs/checkpoints
+  logs_dir: /kaggle/working/2026_finvcup_baseline/outputs/logs
 
   cache_root: /root/.cache
 
