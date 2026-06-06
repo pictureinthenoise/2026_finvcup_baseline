@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export HF_HOME=/path/to/.cache/huggingface
-export TRANSFORMERS_CACHE=/path/to/.cache/huggingface
-export TORCH_HOME=/path/to/.cache/torch
+export HF_HOME=/root/.cache/huggingface
+export TRANSFORMERS_CACHE=/root/.cache/huggingface
+export TORCH_HOME=/root/.cache/torch
 export HF_ENDPOINT=https://hf-mirror.com
-export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1,2,3}
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1}
 
 CONFIG_PATH=${1:-configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml}
 NPROC=${2:-4}
