@@ -57,7 +57,7 @@ train:
   multi_label: true
   pos_weight_mode: per_label
 
-  epochs: 1
+  epochs: 30
   max_steps_per_epoch: 5000
   eval_valid_max_batches: 400
 
