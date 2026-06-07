@@ -12,4 +12,4 @@ NPROC=${2:-4}
 CONFIG_PATH="${CONFIG_PATH//$'\r'/}"
 NPROC="${NPROC//$'\r'/}"
 
-torchrun --nproc_per_node="${NPROC}" -m src.train --config "${CONFIG_PATH}" --epochs "1" --max_train_samples="37"
+torchrun --nproc_per_node="${NPROC}" -m src.train --config "${CONFIG_PATH}" --epochs "1" --max_train_samples="4000" --max_valid_samples="400"
