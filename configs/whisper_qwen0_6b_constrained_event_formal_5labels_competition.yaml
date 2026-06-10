@@ -37,12 +37,12 @@ audio_encoder:
   type: whisper
   model_name: openai/whisper-large-v3
   proj_dim: 512
-  freeze: true
+  freeze: false
 
 text_encoder:
   model_name: Qwen/Qwen3-0.6B
   max_length: 256
-  freeze_backbone: true
+  freeze_backbone: false
 
 context_encoder:
   vocab_size: 5
@@ -57,8 +57,8 @@ train:
   multi_label: true
   pos_weight_mode: per_label
 
-  epochs: 30
-  max_steps_per_epoch: 5000
+  epochs: 1
+  max_steps_per_epoch: 500
   eval_valid_max_batches: 400
 
   batch_size: 2
