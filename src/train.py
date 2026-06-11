@@ -33,7 +33,7 @@ from src.utils import (
 
 import torch.nn.functional as F # NEW
 
-class FocalLoss(torch.nn.Module): # NEW
+class FocalLoss(torch.nn.Module):
     def __init__(self, alpha=0.25, gamma=2.0, pos_weight=None):
         super().__init__()
         self.alpha = alpha
@@ -41,10 +41,16 @@ class FocalLoss(torch.nn.Module): # NEW
         self.pos_weight = pos_weight
 
     def forward(self, inputs, targets):
+        # 1. Standard BCE with your pos_weights
         bce_loss = F.binary_cross_entropy_with_logits(
             inputs, targets, reduction='none', pos_weight=self.pos_weight
         )
-        pt = torch.exp(-bce_loss) 
+        
+        # 2. Correct calculation of p_t (probability of the actual target)
+        probs = torch.sigmoid(inputs)
+        pt = probs * targets + (1 - probs) * (1 - targets) 
+        
+        # 3. Apply Focal Loss formula
         focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
         return focal_loss.mean()
 
@@ -240,6 +246,33 @@ def main():
     gt_test_labels = None
 
     model = MultimodalTurnTakingModel(cfg).to(device)
+    
+    # ==========================================
+    # NEW: LoRA IMPLEMENTATION
+    # ==========================================
+    from peft import LoraConfig, get_peft_model
+    
+    # Configuration for injecting trainable parameters
+    lora_config = LoraConfig(
+        r=8,                     # Rank of the LoRA matrices (low memory footprint)
+        lora_alpha=16,           # Scaling factor
+        target_modules=["q_proj", "v_proj"], # Applies to Attention layers of Qwen/Whisper
+        lora_dropout=0.05,
+        bias="none",
+    )
+
+    if is_main:
+        print("Injecting LoRA adapters into frozen encoders...")
+
+    # Wrap the Audio Encoder (Whisper)
+    if hasattr(model, 'audio_encoder'):
+        model.audio_encoder = get_peft_model(model.audio_encoder, lora_config)
+        
+    # Wrap the Text Encoder (Qwen)
+    if hasattr(model, 'text_encoder'):
+        model.text_encoder = get_peft_model(model.text_encoder, lora_config)
+    # ==========================================    
+    
     if is_distributed():
         model = DDP(
             model,
