@@ -250,27 +250,27 @@ def main():
     # ==========================================
     # NEW: LoRA IMPLEMENTATION
     # ==========================================
-    from peft import LoraConfig, get_peft_model
+    # from peft import LoraConfig, get_peft_model
     
     # Configuration for injecting trainable parameters
-    lora_config = LoraConfig(
-        r=8,                     # Rank of the LoRA matrices (low memory footprint)
-        lora_alpha=16,           # Scaling factor
-        target_modules=["q_proj", "v_proj"], # Applies to Attention layers of Qwen/Whisper
-        lora_dropout=0.05,
-        bias="none",
-    )
+    # lora_config = LoraConfig(
+    #     r=8,                     # Rank of the LoRA matrices (low memory footprint)
+    #     lora_alpha=16,           # Scaling factor
+    #     target_modules=["q_proj", "v_proj"], # Applies to Attention layers of Qwen/Whisper
+    #     lora_dropout=0.05,
+    #     bias="none",
+    # )
 
-    if is_main:
-        print("Injecting LoRA adapters into frozen encoders...")
+    # if is_main:
+    #     print("Injecting LoRA adapters into frozen encoders...")
 
     # Wrap the Audio Encoder (Whisper)
-    if hasattr(model, 'audio_encoder'):
-        model.audio_encoder = get_peft_model(model.audio_encoder, lora_config)
+    # if hasattr(model, 'audio_encoder'):
+    #     model.audio_encoder = get_peft_model(model.audio_encoder, lora_config)
         
     # Wrap the Text Encoder (Qwen)
-    if hasattr(model, 'text_encoder'):
-        model.text_encoder = get_peft_model(model.text_encoder, lora_config)
+    # if hasattr(model, 'text_encoder'):
+    #     model.text_encoder = get_peft_model(model.text_encoder, lora_config)
     # ==========================================    
     
     if is_distributed():
