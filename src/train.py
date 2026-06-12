@@ -31,28 +31,28 @@ from src.utils import (
     setup_distributed,
 )
 
-import torch.nn.functional as F # NEW
+# import torch.nn.functional as F # NEW
 
-class FocalLoss(torch.nn.Module):
-    def __init__(self, alpha=0.25, gamma=2.0, pos_weight=None):
-        super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.pos_weight = pos_weight
+# class FocalLoss(torch.nn.Module):
+#     def __init__(self, alpha=0.25, gamma=2.0, pos_weight=None):
+#         super().__init__()
+#         self.alpha = alpha
+#         self.gamma = gamma
+#         self.pos_weight = pos_weight
 
-    def forward(self, inputs, targets):
-        # 1. Standard BCE with your pos_weights
-        bce_loss = F.binary_cross_entropy_with_logits(
-            inputs, targets, reduction='none', pos_weight=self.pos_weight
-        )
+#     def forward(self, inputs, targets):
+#         # 1. Standard BCE with your pos_weights
+#         bce_loss = F.binary_cross_entropy_with_logits(
+#             inputs, targets, reduction='none', pos_weight=self.pos_weight
+#         )
         
-        # 2. Correct calculation of p_t (probability of the actual target)
-        probs = torch.sigmoid(inputs)
-        pt = probs * targets + (1 - probs) * (1 - targets) 
+#         # 2. Correct calculation of p_t (probability of the actual target)
+#         probs = torch.sigmoid(inputs)
+#         pt = probs * targets + (1 - probs) * (1 - targets) 
         
-        # 3. Apply Focal Loss formula
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
-        return focal_loss.mean()
+#         # 3. Apply Focal Loss formula
+#         focal_loss = self.alpha * (1 - pt) ** self.gamma * bce_loss
+#         return focal_loss.mean()
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -289,8 +289,8 @@ def main():
         pos_weight = torch.tensor(pw, device=device, dtype=torch.float32)
     else:
         pos_weight = torch.ones(len(multi_targets), device=device, dtype=torch.float32)
-    # criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    criterion = FocalLoss(gamma=2.0, pos_weight=pos_weight)
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    # criterion = FocalLoss(gamma=2.0, pos_weight=pos_weight)
 
     max_steps_per_epoch_cfg = cfg["train"].get("max_steps_per_epoch", None)
     max_steps_per_epoch = (
