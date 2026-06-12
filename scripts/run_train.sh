@@ -12,4 +12,4 @@ NPROC=${2:-4}
 CONFIG_PATH="${CONFIG_PATH//$'\r'/}"
 NPROC="${NPROC//$'\r'/}"
 
-torchrun --nproc_per_node="${NPROC}" -m src.train --config "${CONFIG_PATH}"
+torchrun --nproc_per_node="${NPROC}" -m src.train --config "${CONFIG_PATH}" --resume /kaggle/input/models/pictureinthenoise/finvolution-teach-voice-ai-when-to-speak-cp-14/pytorch/default/1/best.pt
