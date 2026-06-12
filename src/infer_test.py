@@ -108,7 +108,8 @@ def main():
                 p = probs[i].tolist()
                 if len(p) != len(multi_targets):
                     raise RuntimeError(f"logits dim {len(p)} != len(multi_targets) {len(multi_targets)}")
-                pred = [int(float(x) >= args.threshold) for x in p]
+                # pred = [int(float(x) >= args.threshold) for x in p]
+                pred = p # export raw probabilities
                 row = {"segment_id": seg_id}
                 for j, col in enumerate(label_cols):
                     row[col] = pred[j]
