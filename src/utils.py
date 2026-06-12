@@ -101,7 +101,8 @@ def compute_multilabel_metrics(labels, probs, label_names=None) -> Dict[str, flo
     for i, name in enumerate(label_names):
         y = labels[:, i]
         p = probs[:, i]
-        pred = (p >= THRESH[i]).astype(int)
+        # pred = (p >= THRESH[i]).astype(int)
+        pred = (p >= 0.5).astype(int)
         acc = float(accuracy_score(y, pred))
         f1 = float(f1_score(y, pred, zero_division=0))
         if len(np.unique(y)) > 1:
