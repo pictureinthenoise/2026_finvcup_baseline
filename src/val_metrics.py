@@ -243,7 +243,7 @@ def main():
     done = 0
     rows: list[dict] = []
 
-    metrics = compute_multilabel_metrics(model, ds, device, use_amp, METRIC_LABEL_NAMES, 10)
+    metrics = evaluate(model, ds, device, use_amp, METRIC_LABEL_NAMES, 10)
     print(metrics)
 if __name__ == "__main__":
     main()
