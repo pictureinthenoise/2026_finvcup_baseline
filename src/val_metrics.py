@@ -29,6 +29,7 @@ def load_config(path: str) -> Dict:
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default="configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml")
+    p.add_argument("--checkpoint", type=str, required=True)
     return p.parse_args()
 
 def list_conv_ids(labels_dir: Path) -> List[str]:
