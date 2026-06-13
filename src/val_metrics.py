@@ -136,5 +136,11 @@ def main():
         pin_memory=True,
     )
 
+    model = MultimodalTurnTakingModel(cfg).to(device)
+    ckpt = torch.load(args.checkpoint, map_location="cpu")
+    model.load_state_dict(ckpt["model"], strict=False)
+    model.eval()
+    use_amp = bool(cfg["train"].get("use_amp", False))
+
 if __name__ == "__main__":
     main()
