@@ -96,7 +96,7 @@ def main():
     LABELS = cfg["labels"]
     MULTI_TARGETS = list(cfg.get("labels", {}).get("multi_targets", ["C", "NA", "I", "BC", "T"]))
     
-    conv_ids = list_conv_ids(LABELS_DIR)
+    conv_ids = list_conv_ids(TRAIN_LABELS_DIR)
     split_ids = split_conversation_ids(
         conv_ids=conv_ids,
         valid_ratio=float(VALID_RATIO),
