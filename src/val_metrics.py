@@ -1,3 +1,4 @@
+import json
 import argparse
 import yaml
 import numpy as np
@@ -245,6 +246,8 @@ def main():
     rows: list[dict] = []
 
     metrics = evaluate(model, loader, device, use_amp, METRIC_LABEL_NAMES, args.max_eval_batches)
-    print(metrics)
+
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        f.write(json.dumps(metrics))
 if __name__ == "__main__":
     main()
