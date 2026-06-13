@@ -283,7 +283,7 @@ def main():
             model,
             device_ids=[local_rank],
             output_device=local_rank,
-            find_unused_parameters=False,
+            find_unused_parameters=True,
         )
 
     if cfg["train"].get("pos_weight_mode", "per_label") == "per_label":
