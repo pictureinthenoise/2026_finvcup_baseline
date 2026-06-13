@@ -152,5 +152,48 @@ def main():
     done = 0
     rows: list[dict] = []
 
+    with torch.no_grad():
+        for batch in tqdm(loader, desc=f"infer"):
+            waveform = batch["waveform"].to(device, non_blocking=True)
+            input_ids = batch["input_ids"].to(device, non_blocking=True)
+            attention_mask = batch["attention_mask"].to(device, non_blocking=True)
+            context_labels = batch["context_labels"].to(device, non_blocking=True)
+            segment_ids = batch["segment_id"]
+
+            with torch.cuda.amp.autocast(enabled=use_amp):
+                logits = model(
+                    waveform=waveform,
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    context_labels=context_labels,
+                )
+            probs = torch.sigmoid(logits).cpu().numpy()
+            if probs.ndim == 1:
+                probs = probs.reshape(-1, 1)
+
+            for i, seg_id in enumerate(segment_ids):
+                p = probs[i].tolist()
+                if len(p) != len(multi_targets):
+                    raise RuntimeError(f"logits dim {len(p)} != len(multi_targets) {len(multi_targets)}")
+                # pred = [int(float(x) >= args.threshold) for x in p]
+                pred = p # export raw probabilities
+                row = {"segment_id": seg_id}
+                for j, col in enumerate(label_cols):
+                    row[col] = pred[j]
+                rows.append(row)
+                done += 1
+                if limit is not None and done >= limit:
+                    break
+            if limit is not None and done >= limit:
+                break
+
+    rows = sorted(rows, key=lambda r: r["segment_id"])
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(rows)
+
+    print(f"Wrote {len(rows)} rows -> {out_path.resolve()}")
+
 if __name__ == "__main__":
     main()
