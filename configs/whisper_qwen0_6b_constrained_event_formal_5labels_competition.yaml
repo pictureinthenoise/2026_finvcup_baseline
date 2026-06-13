@@ -65,8 +65,8 @@ train:
   eval_batch_size: 4
   log_every_steps: 20
 
-  learning_rate: 8.0e-5
-  warmup_ratio: 0.01
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.03
   ema_decay: 0.98
   weight_decay: 0.01
   grad_clip_norm: 1.0
