@@ -54,30 +54,34 @@ def build_train_samples_multitask(
                 return samples
     return samples
 
-# --- CONFIG ---
-LABELS_DIR = Path("C:/Users/LenovoPC/Documents/GitHub/aiml-finvolution-2026-teach-ai-when-to-speak/input/train/labels")
-VALID_RATIO = 0.1
-SEED = 42
-CONTEXT_CHUNKS = 375
-TARGET_CHUNKS = 25
-STRIDE = 5
-LABELS = {
-  "C": 0,
-  "T": 1,
-  "BC": 2,
-  "I": 3,
-  "NA": 4,
-  "positive_ids": [1, 2, 3],
-  "multi_targets": ["C", "NA", "I", "BC", "T"]
-}
-MULTI_TARGETS = list(LABELS.get("multi_targets", ["C", "NA", "I", "BC", "T"]))
+def main():
+    # --- CONFIG ---
+    LABELS_DIR = Path("C:/Users/LenovoPC/Documents/GitHub/aiml-finvolution-2026-teach-ai-when-to-speak/input/train/labels")
+    VALID_RATIO = 0.1
+    SEED = 42
+    CONTEXT_CHUNKS = 375
+    TARGET_CHUNKS = 25
+    STRIDE = 5
+    LABELS = {
+      "C": 0,
+      "T": 1,
+      "BC": 2,
+      "I": 3,
+      "NA": 4,
+      "positive_ids": [1, 2, 3],
+      "multi_targets": ["C", "NA", "I", "BC", "T"]
+    }
+    MULTI_TARGETS = list(LABELS.get("multi_targets", ["C", "NA", "I", "BC", "T"]))
+    
+    conv_ids = list_conv_ids(LABELS_DIR)
+    split_ids = split_conversation_ids(
+        conv_ids=conv_ids,
+        valid_ratio=float(VALID_RATIO),
+        seed=int(SEED)
+    )
+    _, valid_ids = split_ids["train"], split_ids["valid"]
 
-conv_ids = list_conv_ids(LABELS_DIR)
-split_ids = split_conversation_ids(
-    conv_ids=conv_ids,
-    valid_ratio=float(VALID_RATIO),
-    seed=int(SEED)
-)
-_, valid_ids = split_ids["train"], split_ids["valid"]
+    valid_samples = build_train_samples_multitask(LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
 
-valid_samples = build_train_samples_multitask(LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
+if __name__ == "main":
+    main()
