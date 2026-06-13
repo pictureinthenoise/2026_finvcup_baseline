@@ -6,6 +6,9 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+from src.data import TurnTakingTrainDataset, build_collate_fn
+from src.models import MultimodalTurnTakingModel
+
 @dataclass
 class TrainSampleMulti:
     conv_id: str
@@ -25,7 +28,6 @@ def parse_args():
 
 def list_conv_ids(labels_dir: Path) -> List[str]:
     return sorted([p.stem for p in labels_dir.glob("*.npy")])
-
 
 def split_conversation_ids(
     conv_ids: Sequence[str], valid_ratio: float, seed: int
@@ -62,7 +64,7 @@ def build_train_samples_multitask(
     return samples
 
 def main():
-    # --- CONFIG ---
+    # --- MANUAL CONFIG ---
     # LABELS_DIR = Path("C:/Users/LenovoPC/Documents/GitHub/aiml-finvolution-2026-teach-ai-when-to-speak/input/train/labels")
     # VALID_RATIO = 0.1
     # SEED = 42
@@ -83,7 +85,9 @@ def main():
     args = parse_args()
     cfg = load_config(args.config)
 
-    LABELS_DIR = Path(cfg["paths"]["train_labels_dir"])
+    TRAIN_AUDIO_DIR = Path(cfg["paths"]["train_audio_dir"])
+    TRAIN_TEXT_DIR = Path(cfg["paths"]["train_text_dir"])
+    TRAIN_LABELS_DIR = Path(cfg["paths"]["train_labels_dir"])
     VALID_RATIO = float(cfg["split"]["valid_ratio"])
     SEED = int(cfg["seed"])
     CONTEXT_CHUNKS = int(cfg["context_chunks"])
@@ -100,10 +104,21 @@ def main():
     )
     _, valid_ids = split_ids["train"], split_ids["valid"]
 
-    valid_samples = build_train_samples_multitask(LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
+    valid_samples = build_train_samples_multitask(TRAIN_LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
     ### DEBUG ###
-    print(valid_samples)
+    # print(valid_samples)
     ### DEBUG ###
+
+    valid_dataset = TurnTakingTrainDataset(
+        samples=valid_samples,
+        train_audio_dir=TRAIN_AUDIO_DIR,
+        train_text_dir=TRAIN_TEXT_DIR,
+        train_labels_dir=TRAIN_LABELS_DIR,
+        context_chunks=int(cfg["context_chunks"]),
+        target_chunks=int(cfg["target_chunks"]),
+        chunk_ms=int(cfg["chunk_ms"]),
+        sample_rate=int(cfg["sample_rate"]),
+    )
 
 if __name__ == "__main__":
     main()
