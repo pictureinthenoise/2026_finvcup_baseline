@@ -104,5 +104,5 @@ def main():
     print(valid_samples)
     ### DEBUG ###
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
