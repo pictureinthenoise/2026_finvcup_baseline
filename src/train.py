@@ -248,17 +248,16 @@ def main():
     model = MultimodalTurnTakingModel(cfg).to(device)
     
     # ==========================================
-    # NEW: LoRA IMPLEMENTATION
+    # NEW: LoRA IMPLEMENTATION (FIXED)
     # ==========================================
     from peft import LoraConfig, get_peft_model
     
     # We apply LoRA to the attention layers of both Whisper and Qwen.
-    # We MUST tell PEFT to keep the custom training heads unfrozen!
+    # Note: modules_to_save is REMOVED to prevent signature-mangling wrapper bugs.
     lora_config = LoraConfig(
         r=8,
         lora_alpha=16,
         target_modules=["q_proj", "v_proj"], 
-        modules_to_save=["context_encoder", "fusion_head"], # CRITICAL: Keeps your custom heads trainable
         lora_dropout=0.05,
         bias="none",
     )
@@ -266,12 +265,16 @@ def main():
     if is_main:
         print("Injecting LoRA adapters into frozen encoders...")
 
-    # Wrap the ENTIRE model, not just the sub-encoders
+    # Wrap the ENTIRE model with PEFT
     model = get_peft_model(model, lora_config)
     
+    # MANUALLY UNFREEZE custom heads so they stay trainable
+    for name, param in model.named_parameters():
+        if "context_encoder" in name or "fusion_head" in name:
+            param.requires_grad = True
+            
     if is_main:
-        # This will print exactly how many parameters are trainable. 
-        # You should see roughly 1-5% of parameters are trainable.
+        # Verify that only your LoRA adapters and your custom heads are trainable
         model.print_trainable_parameters()
     # ==========================================  
     
