@@ -105,20 +105,17 @@ def main():
     _, valid_ids = split_ids["train"], split_ids["valid"]
 
     valid_samples = build_train_samples_multitask(TRAIN_LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
-    ### DEBUG ###
-    # print(valid_samples)
-    ### DEBUG ###
-
     valid_dataset = TurnTakingTrainDataset(
         samples=valid_samples,
         train_audio_dir=TRAIN_AUDIO_DIR,
         train_text_dir=TRAIN_TEXT_DIR,
         train_labels_dir=TRAIN_LABELS_DIR,
-        context_chunks=int(cfg["context_chunks"]),
-        target_chunks=int(cfg["target_chunks"]),
+        context_chunks=CONTEXT_CHUNKS,
+        target_chunks=TARGET_CHUNKS,
         chunk_ms=int(cfg["chunk_ms"]),
         sample_rate=int(cfg["sample_rate"]),
     )
+    print("Done creating validation dataset.")
 
 if __name__ == "__main__":
     main()
