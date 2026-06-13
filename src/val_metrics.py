@@ -6,6 +6,11 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from transformers import AutoTokenizer
+
 from src.data import TurnTakingTrainDataset, build_collate_fn
 from src.models import MultimodalTurnTakingModel
 
@@ -104,7 +109,7 @@ def main():
     _, valid_ids = split_ids["train"], split_ids["valid"]
 
     valid_samples = build_train_samples_multitask(TRAIN_LABELS_DIR, conv_ids, CONTEXT_CHUNKS, TARGET_CHUNKS, STRIDE, LABELS, MULTI_TARGETS, None)
-    valid_dataset = TurnTakingTrainDataset(
+    ds = TurnTakingTrainDataset(
         samples=valid_samples,
         train_audio_dir=TRAIN_AUDIO_DIR,
         train_text_dir=TRAIN_TEXT_DIR,
@@ -114,7 +119,22 @@ def main():
         chunk_ms=int(cfg["chunk_ms"]),
         sample_rate=int(cfg["sample_rate"]),
     )
-    print("Done creating validation dataset.")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tokenizer = AutoTokenizer.from_pretrained(cfg["text_encoder"]["model_name"], use_fast=True)
+    if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
+    collate_fn = build_collate_fn(tokenizer, int(cfg["text_encoder"]["max_length"]))
+
+    bs = int(args.batch_size or cfg["train"]["eval_batch_size"])
+    loader = DataLoader(
+        ds,
+        batch_size=bs,
+        shuffle=False,
+        num_workers=int(cfg["num_workers"]),
+        collate_fn=collate_fn,
+        pin_memory=True,
+    )
 
 if __name__ == "__main__":
     main()
