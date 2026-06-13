@@ -302,11 +302,35 @@ def main():
         int(max_steps_per_epoch_cfg) if max_steps_per_epoch_cfg is not None else None
     )
 
+    # optimizer = torch.optim.AdamW(
+    #     [p for p in model.parameters() if p.requires_grad],
+    #     lr=float(cfg["train"]["learning_rate"]),
+    #     weight_decay=float(cfg["train"]["weight_decay"]),
+    # )
+
+    # Group parameters to apply differential learning rates
+    lora_params = []
+    custom_head_params = []
+    
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+        if "context_encoder" in name or "fusion_head" in name:
+            custom_head_params.append(param)
+        else:
+            lora_params.append(param)
+
+    base_lr = float(cfg["train"]["learning_rate"]) # e.g., 1.0e-4
+    
+    # We assign a 3x higher learning rate to the custom heads initialized from scratch
     optimizer = torch.optim.AdamW(
-        [p for p in model.parameters() if p.requires_grad],
-        lr=float(cfg["train"]["learning_rate"]),
+        [
+            {"params": lora_params, "lr": base_lr},
+            {"params": custom_head_params, "lr": base_lr * 3.0},
+        ],
         weight_decay=float(cfg["train"]["weight_decay"]),
-    )
+    )    
+    
     max_epochs = int(cfg["train"]["epochs"])
     accum_steps = int(cfg["train"]["gradient_accumulation_steps"])
     steps_per_epoch_for_sched = (
