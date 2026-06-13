@@ -9,10 +9,12 @@ export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1}
 CONFIG_PATH=${1:-configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml}
 CHECKPOINT_PATH=${2:-/kaggle/input/models/pictureinthenoise/finvolution-teach-voice-ai-when-to-speak-cp-14/pytorch/default/1/best.pt}
 OUTPUT_PATH=${3:-/kaggle/working/output.csv}
-NPROC=${4:-2}
+MAX_EVAL_BATCHES=${4:-100}
+NPROC=${5:-2}
 CONFIG_PATH="${CONFIG_PATH//$'\r'/}"
 CHECKPOINT_PATH="${CHECKPOINT_PATH//$'\r'/}"
 OUTPUT_PATH="${OUTPUT_PATH//$'\r'/}"
+MAX_EVAL_BATCHES="${MAX_EVAL_BATCHES//$'\r'/}"
 NPROC="${NPROC//$'\r'/}"
 
-torchrun --nproc_per_node="${NPROC}" -m src.val_metrics --config "${CONFIG_PATH}" --checkpoint "${CHECKPOINT_PATH}" --output "${OUTPUT_PATH}"
+torchrun --nproc_per_node="${NPROC}" -m src.val_metrics --config "${CONFIG_PATH}" --checkpoint "${CHECKPOINT_PATH}" --output "${OUTPUT_PATH}" --max_eval_batches "${MAX_EVAL_BATCHES}"
