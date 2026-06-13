@@ -30,6 +30,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default="configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml")
     p.add_argument("--checkpoint", type=str, required=True)
+    p.add_argument("--output_csv", type=str, required=True)
     return p.parse_args()
 
 def list_conv_ids(labels_dir: Path) -> List[str]:
@@ -142,6 +143,14 @@ def main():
     model.load_state_dict(ckpt["model"], strict=False)
     model.eval()
     use_amp = bool(cfg["train"].get("use_amp", False))
+
+    out_path = Path(args.output_csv)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = ["segment_id"] + MULTI_TARGETS
+
+    limit = 500 # Set arbirarily high to process all segments
+    done = 0
+    rows: list[dict] = []
 
 if __name__ == "__main__":
     main()
