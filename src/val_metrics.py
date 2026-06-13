@@ -33,6 +33,7 @@ def parse_args():
     p.add_argument("--config", type=str, default="configs/whisper_qwen0_6b_constrained_event_formal_5labels_competition.yaml")
     p.add_argument("--checkpoint", type=str, required=True)
     p.add_argument("--output_csv", type=str, required=True)
+    p.add_argument("--max_eval_batches", type=int, required=True)
     return p.parse_args()
 
 def list_conv_ids(labels_dir: Path) -> List[str]:
@@ -76,6 +77,7 @@ def compute_multilabel_metrics(labels, probs, label_names=None) -> Dict[str, flo
     Label order is `[C, NA, I, BC, T]`. So, interruption labels (`I`) have index `2` and back-channel labels 
     (`BC`) have index `3`.
     """
+    THRESH = [0.5, 0.5, 0.5, 0.5, 0.5] # Class thresholds
     labels = np.asarray(labels).astype(int)
     probs = np.asarray(probs).astype(float)
     if labels.ndim != 2 or probs.ndim != 2:
@@ -92,12 +94,11 @@ def compute_multilabel_metrics(labels, probs, label_names=None) -> Dict[str, flo
     out: Dict[str, float] = {}
     per_acc, per_f1, per_auc = [], [], []
     
-    THRESH = [0.5, 0.5, 0.25, 0.25, 0.5] # Class thresholds
     for i, name in enumerate(label_names):
         y = labels[:, i]
         p = probs[:, i]
-        # pred = (p >= THRESH[i]).astype(int)
-        pred = (p >= 0.5).astype(int)
+        pred = (p >= THRESH[i]).astype(int)
+        # pred = (p >= 0.5).astype(int)
         acc = float(accuracy_score(y, pred))
         f1 = float(f1_score(y, pred, zero_division=0))
         if len(np.unique(y)) > 1:
@@ -243,7 +244,7 @@ def main():
     done = 0
     rows: list[dict] = []
 
-    metrics = evaluate(model, loader, device, use_amp, METRIC_LABEL_NAMES, 10)
+    metrics = evaluate(model, loader, device, use_amp, METRIC_LABEL_NAMES, args.max_eval_batches)
     print(metrics)
 if __name__ == "__main__":
     main()
