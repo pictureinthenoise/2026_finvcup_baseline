@@ -14,6 +14,8 @@ from transformers import AutoTokenizer
 from src.data import TurnTakingTrainDataset, build_collate_fn
 from src.models import MultimodalTurnTakingModel
 
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+
 @dataclass
 class TrainSampleMulti:
     conv_id: str
@@ -69,6 +71,94 @@ def build_train_samples_multitask(
                 return samples
     return samples
 
+def compute_multilabel_metrics(labels, probs, label_names=None) -> Dict[str, float]:
+    """
+    Label order is `[C, NA, I, BC, T]`. So, interruption labels (`I`) have index `2` and back-channel labels 
+    (`BC`) have index `3`.
+    """
+    labels = np.asarray(labels).astype(int)
+    probs = np.asarray(probs).astype(float)
+    if labels.ndim != 2 or probs.ndim != 2:
+        raise ValueError(f"Expected 2D labels/probs, got {labels.shape} and {probs.shape}")
+    if labels.shape != probs.shape:
+        raise ValueError(f"Shape mismatch: labels {labels.shape} vs probs {probs.shape}")
+
+    n_labels = labels.shape[1]
+    if label_names is None:
+        label_names = [f"label{i}" for i in range(n_labels)]
+    if len(label_names) != n_labels:
+        raise ValueError(f"label_names length {len(label_names)} != n_labels {n_labels}")
+
+    out: Dict[str, float] = {}
+    per_acc, per_f1, per_auc = [], [], []
+    
+    THRESH = [0.5, 0.5, 0.25, 0.25, 0.5] # Class thresholds
+    for i, name in enumerate(label_names):
+        y = labels[:, i]
+        p = probs[:, i]
+        # pred = (p >= THRESH[i]).astype(int)
+        pred = (p >= 0.5).astype(int)
+        acc = float(accuracy_score(y, pred))
+        f1 = float(f1_score(y, pred, zero_division=0))
+        if len(np.unique(y)) > 1:
+            auc = float(roc_auc_score(y, p))
+        else:
+            auc = 0.5
+        out[f"{name}_accuracy"] = acc
+        out[f"{name}_f1"] = f1
+        out[f"{name}_roc_auc"] = auc
+        per_acc.append(acc)
+        per_f1.append(f1)
+        per_auc.append(auc)
+
+    out["macro_accuracy"] = float(np.mean(per_acc))
+    out["macro_f1"] = float(np.mean(per_f1))
+    out["macro_roc_auc"] = float(np.mean(per_auc))
+    # Alias for backward-compatible save_metric/print flow
+    out["accuracy"] = out["macro_accuracy"]
+    out["f1"] = out["macro_f1"]
+    out["roc_auc"] = out["macro_roc_auc"]
+    return out
+
+@torch.no_grad()
+def evaluate(
+    model,
+    data_loader,
+    device,
+    use_amp: bool,
+    label_names: list[str] | None = None,
+    max_batches: int | None = None,
+):
+    model.eval()
+    all_labels, all_probs = [], []
+    for bi, batch in enumerate(tqdm(data_loader, desc="eval", leave=False)):
+        if max_batches is not None and bi >= max_batches:
+            break
+        waveform = batch["waveform"].to(device, non_blocking=True)
+        input_ids = batch["input_ids"].to(device, non_blocking=True)
+        attention_mask = batch["attention_mask"].to(device, non_blocking=True)
+        context_labels = batch["context_labels"].to(device, non_blocking=True)
+        labels = batch["label"].to(device, non_blocking=True)
+
+        with torch.cuda.amp.autocast(enabled=use_amp):
+            logits = model(
+                waveform=waveform,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                context_labels=context_labels,
+            )
+
+        probs = torch.sigmoid(logits)
+        all_labels.extend(labels.detach().cpu().numpy().tolist())
+        all_probs.extend(probs.detach().cpu().numpy().tolist())
+
+    labels_np = (
+        torch.as_tensor(all_labels).numpy() if len(all_labels) > 0 else np.array([])
+    )
+    if labels_np.ndim == 2:
+        return compute_multilabel_metrics(all_labels, all_probs, label_names=label_names)
+    raise RuntimeError("The baseline has been solidified into a multi-label training setup; the evaluation process should not enter the binary classification branch.")
+
 def main():
     # --- MANUAL CONFIG ---
     # LABELS_DIR = Path("C:/Users/LenovoPC/Documents/GitHub/aiml-finvolution-2026-teach-ai-when-to-speak/input/train/labels")
@@ -101,6 +191,7 @@ def main():
     STRIDE = int(cfg["stride"])
     LABELS = cfg["labels"]
     MULTI_TARGETS = list(cfg.get("labels", {}).get("multi_targets", ["C", "NA", "I", "BC", "T"]))
+    METRIC_LABEL_NAMES = [x.lower() for x in MULTI_TARGETS]
     
     conv_ids = list_conv_ids(TRAIN_LABELS_DIR)
     split_ids = split_conversation_ids(
@@ -152,48 +243,7 @@ def main():
     done = 0
     rows: list[dict] = []
 
-    with torch.no_grad():
-        for batch in tqdm(loader, desc=f"infer"):
-            waveform = batch["waveform"].to(device, non_blocking=True)
-            input_ids = batch["input_ids"].to(device, non_blocking=True)
-            attention_mask = batch["attention_mask"].to(device, non_blocking=True)
-            context_labels = batch["context_labels"].to(device, non_blocking=True)
-            segment_ids = batch["segment_id"]
-
-            with torch.cuda.amp.autocast(enabled=use_amp):
-                logits = model(
-                    waveform=waveform,
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    context_labels=context_labels,
-                )
-            probs = torch.sigmoid(logits).cpu().numpy()
-            if probs.ndim == 1:
-                probs = probs.reshape(-1, 1)
-
-            for i, seg_id in enumerate(segment_ids):
-                p = probs[i].tolist()
-                if len(p) != len(multi_targets):
-                    raise RuntimeError(f"logits dim {len(p)} != len(multi_targets) {len(multi_targets)}")
-                # pred = [int(float(x) >= args.threshold) for x in p]
-                pred = p # export raw probabilities
-                row = {"segment_id": seg_id}
-                for j, col in enumerate(label_cols):
-                    row[col] = pred[j]
-                rows.append(row)
-                done += 1
-                if limit is not None and done >= limit:
-                    break
-            if limit is not None and done >= limit:
-                break
-
-    rows = sorted(rows, key=lambda r: r["segment_id"])
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
-        w.writeheader()
-        w.writerows(rows)
-
-    print(f"Wrote {len(rows)} rows -> {out_path.resolve()}")
-
+    metrics = compute_multilabel_metrics(model, ds, device, use_amp, METRIC_LABEL_NAMES, 10)
+    print(metrics)
 if __name__ == "__main__":
     main()
