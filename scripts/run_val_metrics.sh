@@ -15,4 +15,4 @@ CHECKPOINT_PATH="${CHECKPOINT_PATH//$'\r'/}"
 OUTPUT_PATH="${OUTPUT_PATH//$'\r'/}"
 MAX_EVAL_BATCHES="${MAX_EVAL_BATCHES//$'\r'/}"
 
-python src/val_metrics --config "${CONFIG_PATH}" --checkpoint "${CHECKPOINT_PATH}" --output "${OUTPUT_PATH}" --max_eval_batches "${MAX_EVAL_BATCHES}"
+python src/val_metrics.py --config "${CONFIG_PATH}" --checkpoint "${CHECKPOINT_PATH}" --output "${OUTPUT_PATH}" --max_eval_batches "${MAX_EVAL_BATCHES}"
