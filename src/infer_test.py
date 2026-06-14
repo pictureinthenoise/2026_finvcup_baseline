@@ -114,7 +114,7 @@ def main():
                 
                 pred = []
                 for i, prob in enumerate(p):
-                    pred.extend(int(float(x) >= GOLDEN_THRESHOLDS[i])
+                    pred.extend(int(float(x) >= GOLDEN_THRESHOLDS[i]))
                 
                 row = {"segment_id": seg_id}
                 for j, col in enumerate(label_cols):
