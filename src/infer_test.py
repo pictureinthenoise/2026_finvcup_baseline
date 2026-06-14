@@ -45,7 +45,8 @@ def main():
     args = parse_args()
     cfg = load_config(args.config)
     set_env_paths(cfg)
-
+    GOLDEN_THRESHOLDS = [0.50, 0.29, 0.64, 0.63, 0.55]
+    
     # Baseline 固化为 event-level 多标签（未来 2s 内各标签是否出现）
     use_multi_label = True
 
@@ -109,7 +110,12 @@ def main():
                 if len(p) != len(multi_targets):
                     raise RuntimeError(f"logits dim {len(p)} != len(multi_targets) {len(multi_targets)}")
                 # pred = [int(float(x) >= args.threshold) for x in p]
-                pred = p # export raw probabilities
+                # pred = p # export raw probabilities
+                
+                pred = []
+                for i, prob in enumerate(p):
+                    pred.extend(int(float(x) >= GOLDEN_THRESHOLDS[i])
+                
                 row = {"segment_id": seg_id}
                 for j, col in enumerate(label_cols):
                     row[col] = pred[j]
