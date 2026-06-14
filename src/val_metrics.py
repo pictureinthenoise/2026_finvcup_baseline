@@ -229,7 +229,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
     collate_fn = build_collate_fn(tokenizer, int(cfg["text_encoder"]["max_length"]))
 
-    bs = int(cfg["train"]["eval_batch_size"])
+    bs = int(cfg["train"]["eval_batch_size"]) * 4 # Increase batch size above config file value
     loader = DataLoader(
         ds,
         batch_size=bs,
