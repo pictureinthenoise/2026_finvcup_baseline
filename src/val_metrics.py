@@ -197,7 +197,8 @@ def main():
     SEED = int(cfg["seed"])
     CONTEXT_CHUNKS = int(cfg["context_chunks"])
     TARGET_CHUNKS = int(cfg["target_chunks"])
-    STRIDE = int(cfg["stride"])
+    # STRIDE = int(cfg["stride"])
+    STRIDE = 50 # Use larger stride just for evaluation
     LABELS = cfg["labels"]
     MULTI_TARGETS = list(cfg.get("labels", {}).get("multi_targets", ["C", "NA", "I", "BC", "T"]))
     METRIC_LABEL_NAMES = [x.lower() for x in MULTI_TARGETS]
