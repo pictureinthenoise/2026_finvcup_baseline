@@ -158,6 +158,13 @@ def evaluate(
         torch.as_tensor(all_labels).numpy() if len(all_labels) > 0 else np.array([])
     )
     if labels_np.ndim == 2:
+        labels_np = np.array(all_labels)
+        probs_np = np.array(all_probs)
+    
+        # Save arrays to disk so we never have to run inference again!
+        np.save("val_labels.npy", labels_np)
+        np.save("val_probs.npy", probs_np)
+        
         return compute_multilabel_metrics(all_labels, all_probs, label_names=label_names)
     raise RuntimeError("The baseline has been solidified into a multi-label training setup; the evaluation process should not enter the binary classification branch.")
 
