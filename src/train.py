@@ -320,16 +320,18 @@ def main():
         else:
             lora_params.append(param)
 
-    base_lr = float(cfg["train"]["learning_rate"]) # e.g., 1.0e-4
-    
-    # We assign a 3x higher learning rate to the custom heads initialized from scratch
+    # REPLACE your current optimizer code with this:
+    # ---------------------------------------------------------
+    # 1.0e-5 is gentle enough to protect the pretrained encoders
+    # 3.0e-4 is fast enough to quickly train the random heads
     optimizer = torch.optim.AdamW(
         [
-            {"params": lora_params, "lr": base_lr},
-            {"params": custom_head_params, "lr": base_lr * 3.0},
+            {"params": lora_params, "lr": 1.0e-5}, 
+            {"params": custom_head_params, "lr": 3.0e-4},
         ],
         weight_decay=float(cfg["train"]["weight_decay"]),
     )    
+    # ---------------------------------------------------------   
     
     max_epochs = int(cfg["train"]["epochs"])
     accum_steps = int(cfg["train"]["gradient_accumulation_steps"])
