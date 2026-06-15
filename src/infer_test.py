@@ -28,6 +28,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="test 推理：仅导出 pred.csv（多标签 event-level）")
     p.add_argument("--config", type=str, required=True)
     p.add_argument("--checkpoint", type=str, required=True)
+    p.add_argument("--checkpoint_lora", type=str, required=True)
     p.add_argument("--test_root", type=str, required=True, help="测试数据根目录")
     p.add_argument("--threshold", type=float, default=0.5)
     p.add_argument("--batch_size", type=int, default=None, help="默认取 config train.eval_batch_size")
@@ -72,10 +73,22 @@ def main():
         pin_memory=True,
     )
 
-    model = MultimodalTurnTakingModel(cfg).to(device)
-    ckpt = torch.load(args.checkpoint, map_location="cpu")
-    model.load_state_dict(ckpt["model"], strict=False)
-    model.eval()
+    # 1. Load OOB Model
+    model_oob = MultimodalTurnTakingModel(cfg).to(device)
+    ckpt_oob = torch.load(args.checkpoint, map_location="cpu")
+    model_oob.load_state_dict(ckpt_oob["model"], strict=False)
+    model_oob.eval()
+
+    # 2. Load LoRA Model
+    model_lora = MultimodalTurnTakingModel(cfg).to(device) # Ensure LoRA config is handled if necessary
+    ckpt_lora = torch.load(args.checkpoint_lora, map_location="cpu")
+    model_lora.load_state_dict(ckpt_lora["model"], strict=False)
+    model_lora.eval()
+
+    # Blending Weights (Matched to your python script order: C, NA, I, BC, T)
+    W_OOB = torch.tensor([0.8, 0.2, 0.8, 0.2, 0.8]).to(device)
+    W_LORA = torch.tensor([0.2, 0.8, 0.2, 0.8, 0.2]).to(device)    
+    
     use_amp = bool(cfg["train"].get("use_amp", False))
 
     out_path = Path(args.output_csv)
@@ -95,13 +108,28 @@ def main():
             segment_ids = batch["segment_id"]
 
             with torch.cuda.amp.autocast(enabled=use_amp):
-                logits = model(
+                # Run OOB
+                logits_oob = model_oob(
+                    waveform=waveform,
+                    input_ids=input_ids,
+                    attention_mask=attention_mask, 
+                    context_labels=context_labels
+                )
+                probs_oob = torch.sigmoid(logits_oob)
+
+                # Run LoRA
+                logits_lora = model_lora(
                     waveform=waveform,
                     input_ids=input_ids,
                     attention_mask=attention_mask,
-                    context_labels=context_labels,
+                    context_labels=context_labels
                 )
-            probs = torch.sigmoid(logits).cpu().numpy()
+                probs_lora = torch.sigmoid(logits_lora)                            
+            
+            # BLEND THE PROBABILITIES EXACTLY LIKE THE VALIDATION SCRIPT
+            probs = (probs_oob * W_OOB) + (probs_lora * W_LORA)
+            probs = probs.cpu().numpy()
+            
             if probs.ndim == 1:
                 probs = probs.reshape(-1, 1)
 
