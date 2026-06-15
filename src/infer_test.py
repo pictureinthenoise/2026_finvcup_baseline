@@ -46,7 +46,7 @@ def main():
     args = parse_args()
     cfg = load_config(args.config)
     set_env_paths(cfg)
-    GOLDEN_THRESHOLDS = [0.50, 0.29, 0.62, 0.65, 0.55]
+    GOLDEN_THRESHOLDS = [0.50, 0.29, 0.80, 0.85, 0.55]
     
     # Baseline 固化为 event-level 多标签（未来 2s 内各标签是否出现）
     use_multi_label = True
@@ -86,8 +86,8 @@ def main():
     model_lora.eval()
 
     # Blending Weights (Matched to your python script order: C, NA, I, BC, T)
-    W_OOB = torch.tensor([0.8, 0.2, 0.8, 0.2, 0.8]).to(device)
-    W_LORA = torch.tensor([0.2, 0.8, 0.2, 0.8, 0.2]).to(device)    
+    W_OOB = torch.tensor([1.0, 1.0, 1.0, 1.0, 1.0]).to(device)
+    W_LORA = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0]).to(device)    
     
     use_amp = bool(cfg["train"].get("use_amp", False))
 
